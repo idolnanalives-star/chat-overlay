@@ -275,14 +275,27 @@
 
         // Listen for Social Stream Ninja messages
         window.addEventListener('message', function(event) {
-            if (event.data && event.data.type === 'chat') {
-                const data = {
-                    username: event.data.chatname || event.data.username || 'Anonymous',
-                    text: event.data.chatmessage || event.data.message || '',
-                    badges: event.data.chatbadges || event.data.badges || [],
-                    platform: event.data.type || 'unknown'
-                };
-                addMessage(data);
+            console.log('Received message:', event.data); // Debug log
+            
+            // Handle different SSN message formats
+            if (event.data) {
+                let messageData = event.data;
+                
+                // Check if it's a chat message
+                if (messageData.chatmessage || messageData.chatname || 
+                    (messageData.type && messageData.type.includes('chat'))) {
+                    
+                    const data = {
+                        username: messageData.chatname || messageData.username || 'Anonymous',
+                        text: messageData.chatmessage || messageData.message || '',
+                        badges: messageData.chatbadges || messageData.badges || [],
+                        platform: messageData.type || 'unknown'
+                    };
+                    
+                    if (data.text) { // Only add if there's actual text
+                        addMessage(data);
+                    }
+                }
             }
         });
     </script>
