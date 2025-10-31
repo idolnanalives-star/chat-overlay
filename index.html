@@ -169,28 +169,6 @@
     <div id="messages"></div>
 
     <script>
-        // Demo messages for preview
-        const demoMessages = [
-            {
-                username: 'NyaListener',
-                text: 'Hai hai! Your stream is so cozy! 💕',
-                badges: ['subscriber'],
-                platform: 'twitch'
-            },
-            {
-                username: 'KawaiiGamer',
-                text: 'The new setup looks amazing!! ✨🎀',
-                badges: ['member'],
-                platform: 'youtube'
-            },
-            {
-                username: 'PinkPanda',
-                text: 'Just subscribed! Love the vibes here~ 🌸',
-                badges: ['subscriber', 'vip'],
-                platform: 'twitch'
-            }
-        ];
-
         const messagesContainer = document.getElementById('messages');
         const maxMessages = 8;
         let messageCount = 0;
@@ -200,7 +178,7 @@
             messageDiv.className = 'message';
             
             // Add special class for memberships/subs
-            if (data.badges.includes('subscriber') || data.badges.includes('member')) {
+            if (data.badges && (data.badges.includes('subscriber') || data.badges.includes('member'))) {
                 messageDiv.classList.add('subscription');
             }
 
@@ -213,19 +191,22 @@
             // Add platform icon
             const platformIcon = document.createElement('span');
             platformIcon.className = 'platform-icon';
-            platformIcon.textContent = data.platform === 'twitch' ? '💜' : '❤️';
+            platformIcon.textContent = data.platform === 'twitch' ? '💜' : 
+                                      data.platform === 'youtube' ? '❤️' : '💬';
             username.appendChild(platformIcon);
 
             // Add badges
-            data.badges.forEach(badge => {
-                const badgeImg = document.createElement('span');
-                badgeImg.className = 'badge';
-                badgeImg.title = badge;
-                badgeImg.style.background = badge === 'subscriber' ? '#9146FF' : 
-                                           badge === 'member' ? '#0F9D58' :
-                                           badge === 'vip' ? '#FF69B4' : '#FFB6C1';
-                username.appendChild(badgeImg);
-            });
+            if (data.badges && data.badges.length > 0) {
+                data.badges.forEach(badge => {
+                    const badgeImg = document.createElement('span');
+                    badgeImg.className = 'badge';
+                    badgeImg.title = badge;
+                    badgeImg.style.background = badge === 'subscriber' ? '#9146FF' : 
+                                               badge === 'member' ? '#0F9D58' :
+                                               badge === 'vip' ? '#FF69B4' : '#FFB6C1';
+                    username.appendChild(badgeImg);
+                });
+            }
 
             // Add username text
             const nameText = document.createElement('span');
@@ -255,43 +236,38 @@
             }
         }
 
-        // Demo mode - add messages every 4 seconds (for testing)
-        // Comment out these lines once connected to your stream
-        let demoIndex = 0;
-        const demoInterval = setInterval(() => {
-            addMessage(demoMessages[demoIndex]);
-            demoIndex = (demoIndex + 1) % demoMessages.length;
-        }, 4000);
-
-        // Add first message immediately
-        addMessage(demoMessages[0]);
-
-        // Listen for Social Stream Ninja messages
+        // Listen for ALL postMessage events
         window.addEventListener('message', function(event) {
-            console.log('Received message:', event.data); // Debug log
+            const data = event.data;
             
-            // Handle different SSN message formats
-            if (event.data) {
-                let messageData = event.data;
+            // Log everything for debugging
+            console.log('Received:', data);
+            
+            // Try to extract chat data from various SSN formats
+            if (data && typeof data === 'object') {
+                let username = data.chatname || data.username || data.name || data.from;
+                let text = data.chatmessage || data.message || data.msg || data.text;
+                let badges = data.chatbadges || data.badges || [];
+                let platform = data.type || data.platform || data.service || 'unknown';
                 
-                // Check for various SSN message types
-                if (messageData.chatmessage || messageData.chatname || 
-                    messageData.type === 'chat' || messageData.type === 'twitch' || 
-                    messageData.type === 'youtube' || messageData.type === 'trovo') {
-                    
-                    const data = {
-                        username: messageData.chatname || messageData.username || messageData.name || 'Anonymous',
-                        text: messageData.chatmessage || messageData.message || messageData.msg || '',
-                        badges: messageData.chatbadges || messageData.badges || [],
-                        platform: messageData.type || 'unknown'
-                    };
-                    
-                    if (data.text && data.text.length > 0) { // Only add if there's actual text
-                        addMessage(data);
-                    }
+                // If we have both username and text, show the message
+                if (username && text) {
+                    addMessage({
+                        username: username,
+                        text: text,
+                        badges: badges,
+                        platform: platform
+                    });
                 }
             }
         });
+
+        // Also listen on parent window if in iframe
+        if (window.parent !== window) {
+            window.parent.addEventListener('message', function(event) {
+                window.postMessage(event.data, '*');
+            });
+        }
     </script>
 </body>
 </html>
