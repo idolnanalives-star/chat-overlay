@@ -266,13 +266,6 @@
         // Add first message immediately
         addMessage(demoMessages[0]);
 
-        // Connect to Social Stream Ninja session
-        const SESSION_ID = 'uZZ6efT6TE';
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = `https://beta.socialstream.ninja/dock.html?session=${SESSION_ID}&view=0`;
-        document.body.appendChild(iframe);
-
         // Listen for Social Stream Ninja messages
         window.addEventListener('message', function(event) {
             console.log('Received message:', event.data); // Debug log
@@ -281,18 +274,19 @@
             if (event.data) {
                 let messageData = event.data;
                 
-                // Check if it's a chat message
+                // Check for various SSN message types
                 if (messageData.chatmessage || messageData.chatname || 
-                    (messageData.type && messageData.type.includes('chat'))) {
+                    messageData.type === 'chat' || messageData.type === 'twitch' || 
+                    messageData.type === 'youtube' || messageData.type === 'trovo') {
                     
                     const data = {
-                        username: messageData.chatname || messageData.username || 'Anonymous',
-                        text: messageData.chatmessage || messageData.message || '',
+                        username: messageData.chatname || messageData.username || messageData.name || 'Anonymous',
+                        text: messageData.chatmessage || messageData.message || messageData.msg || '',
                         badges: messageData.chatbadges || messageData.badges || [],
                         platform: messageData.type || 'unknown'
                     };
                     
-                    if (data.text) { // Only add if there's actual text
+                    if (data.text && data.text.length > 0) { // Only add if there's actual text
                         addMessage(data);
                     }
                 }
